@@ -27,7 +27,7 @@ from tests.unit_tests.test_utilities import Utils
 
 if HAVE_EMERGING_OPTIMIZERS:
     try:
-        from emerging_optimizers.riemannian_optimizers import ISO
+        from emerging_optimizers.rl_optimizers import ISO
     except ImportError:
         ISO = None
     from emerging_optimizers.scalar_optimizers import Lion

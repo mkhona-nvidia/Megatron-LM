@@ -35,7 +35,7 @@ try:
     from emerging_optimizers.soap import SOAP  # pylint: disable=unused-import
 
     try:
-        from emerging_optimizers.riemannian_optimizers import ISO
+        from emerging_optimizers.rl_optimizers import ISO
     except ImportError:
         ISO = None
 
