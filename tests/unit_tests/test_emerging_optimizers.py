@@ -27,13 +27,13 @@ from tests.unit_tests.test_utilities import Utils
 
 if HAVE_EMERGING_OPTIMIZERS:
     try:
-        from emerging_optimizers.rl_optimizers import ISO
+        from emerging_optimizers.rl_optimizers import Iso
     except ImportError:
-        ISO = None
+        Iso = None
     from emerging_optimizers.scalar_optimizers import Lion
     from emerging_optimizers.soap import SOAP
 else:
-    ISO = None
+    Iso = None
     SOAP = None
     Lion = None
 
@@ -72,9 +72,9 @@ class Net(nn.Module):
 # ===========================================================================
 
 
-@pytest.mark.skipif(ISO is None, reason="installed emerging_optimizers does not provide ISO")
+@pytest.mark.skipif(Iso is None, reason="installed emerging_optimizers does not provide ISO")
 def test_iso_optimizer_registry_integration():
-    assert ISO is not None
+    assert Iso is not None
     param = torch.nn.Parameter(torch.randn(8, 5, dtype=torch.float32, device="cuda"))
     config = OptimizerConfig(
         optimizer="iso",
@@ -91,7 +91,7 @@ def test_iso_optimizer_registry_integration():
         pg_collection=None,
     )
 
-    assert isinstance(optimizer, ISO)
+    assert isinstance(optimizer, Iso)
     assert optimizer.defaults["momentum"] == 0.8
     assert optimizer.defaults["retraction"] == "polar"
 

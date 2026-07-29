@@ -35,16 +35,16 @@ try:
     from emerging_optimizers.soap import SOAP  # pylint: disable=unused-import
 
     try:
-        from emerging_optimizers.rl_optimizers import ISO
+        from emerging_optimizers.rl_optimizers import Iso
     except ImportError:
-        ISO = None
+        Iso = None
 
     HAVE_EMERGING_OPTIMIZERS = True
 except ImportError:
     HAVE_EMERGING_OPTIMIZERS = False
     OrthogonalizedOptimizer = object
     AdaptiveMuon = object
-    ISO = None
+    Iso = None
 
 
 logger = logging.getLogger(__name__)
@@ -463,8 +463,8 @@ def _adaptive_muon_config_to_kwargs(config, model_chunks, pg_collection) -> Dict
 
 def _iso_config_to_kwargs(config, model_chunks, pg_collection) -> Dict[str, Any]:
     """Convert OptimizerConfig to ISO constructor kwargs."""
-    assert ISO is not None
-    return _kwargs_from_config(ISO, "iso", config)
+    assert Iso is not None
+    return _kwargs_from_config(Iso, "iso", config)
 
 
 def _default_adam_based_eopt_config_to_kwargs(
@@ -508,9 +508,9 @@ _EMERGING_OPTIMIZERS.update(
     }
 )
 
-if ISO is not None:
+if Iso is not None:
     _EMERGING_OPTIMIZERS["iso"] = EmergingOptimizerEntry(
-        optimizer_cls=ISO,
+        optimizer_cls=Iso,
         init_state_fn=_iso_init_state_fn,
         config_to_kwargs=_iso_config_to_kwargs,
     )
