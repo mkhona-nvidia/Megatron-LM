@@ -34,11 +34,17 @@ try:
     from emerging_optimizers.scalar_optimizers import Lion  # pylint: disable=unused-import
     from emerging_optimizers.soap import SOAP  # pylint: disable=unused-import
 
+    try:
+        from emerging_optimizers.riemannian_optimizers import ISO
+    except ImportError:
+        ISO = None
+
     HAVE_EMERGING_OPTIMIZERS = True
 except ImportError:
     HAVE_EMERGING_OPTIMIZERS = False
     OrthogonalizedOptimizer = object
     AdaptiveMuon = object
+    ISO = None
 
 
 logger = logging.getLogger(__name__)
@@ -76,6 +82,13 @@ def _eopt_init_state_fn(opt, config=None):
     for group in opt.param_groups:
         # Checkpoint init needs state for all parameters, including those without grads yet.
         opt._init_group(group, skip_non_grad_params=False)
+
+
+def _iso_init_state_fn(opt, config=None):
+    """Initialize ISO state before loading a checkpoint."""
+    for group in opt.param_groups:
+        for param in group["params"]:
+            opt._init_state(param)
 
 
 def _default_param_overrides_factory() -> Dict[ParamKey, Dict[str, Any]]:
@@ -448,6 +461,12 @@ def _adaptive_muon_config_to_kwargs(config, model_chunks, pg_collection) -> Dict
     return kwargs
 
 
+def _iso_config_to_kwargs(config, model_chunks, pg_collection) -> Dict[str, Any]:
+    """Convert OptimizerConfig to ISO constructor kwargs."""
+    assert ISO is not None
+    return _kwargs_from_config(ISO, "iso", config)
+
+
 def _default_adam_based_eopt_config_to_kwargs(
     eopt_name, config, model_chunks, pg_collection
 ) -> Dict[str, Any]:
@@ -488,6 +507,13 @@ _EMERGING_OPTIMIZERS.update(
         ),
     }
 )
+
+if ISO is not None:
+    _EMERGING_OPTIMIZERS["iso"] = EmergingOptimizerEntry(
+        optimizer_cls=ISO,
+        init_state_fn=_iso_init_state_fn,
+        config_to_kwargs=_iso_config_to_kwargs,
+    )
 
 # Register soap with default config
 # TODO(skyw): register all emerging optimizers.

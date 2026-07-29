@@ -15,6 +15,7 @@ from megatron.core.optimizer.emerging_optimizers import (
     HAVE_EMERGING_OPTIMIZERS,
     TensorParallelAdaptiveMuon,
     TensorParallelMuon,
+    _create_emerging_optimizer,
     _get_qkv_split_shapes,
     get_supported_coefficient_types,
     validate_coefficient_type,
@@ -25,9 +26,14 @@ from megatron.core.transformer import TransformerConfig
 from tests.unit_tests.test_utilities import Utils
 
 if HAVE_EMERGING_OPTIMIZERS:
+    try:
+        from emerging_optimizers.riemannian_optimizers import ISO
+    except ImportError:
+        ISO = None
     from emerging_optimizers.scalar_optimizers import Lion
     from emerging_optimizers.soap import SOAP
 else:
+    ISO = None
     SOAP = None
     Lion = None
 
@@ -59,6 +65,55 @@ class Net(nn.Module):
         x = F.relu(self.fc4(x))
         x = self.fc5(x)
         return x
+
+
+# ===========================================================================
+# ISO optimizer tests
+# ===========================================================================
+
+
+@pytest.mark.skipif(ISO is None, reason="installed emerging_optimizers does not provide ISO")
+def test_iso_optimizer_registry_integration():
+    assert ISO is not None
+    param = torch.nn.Parameter(torch.randn(8, 5, dtype=torch.float32, device="cuda"))
+    config = OptimizerConfig(
+        optimizer="iso",
+        lr=0.01,
+        weight_decay=0.0,
+        iso_momentum=0.8,
+        iso_retraction="polar",
+    )
+    optimizer, init_state_fn = _create_emerging_optimizer(
+        config,
+        [{"params": [param]}],
+        "iso",
+        model_chunks=[],
+        pg_collection=None,
+    )
+
+    assert isinstance(optimizer, ISO)
+    assert optimizer.defaults["momentum"] == 0.8
+    assert optimizer.defaults["retraction"] == "polar"
+
+    initial_singular_values = torch.linalg.svdvals(param).clone()
+    init_state_fn(optimizer)
+    assert set(optimizer.state[param]) == {
+        "step",
+        "u",
+        "sigma",
+        "v",
+        "momentum_u",
+        "momentum_v",
+    }
+
+    param.grad = torch.randn_like(param)
+    optimizer.step()
+    torch.testing.assert_close(
+        torch.linalg.svdvals(param),
+        initial_singular_values,
+        atol=1e-5,
+        rtol=1e-5,
+    )
 
 
 # ===========================================================================

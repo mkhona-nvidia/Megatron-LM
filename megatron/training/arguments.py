@@ -1683,8 +1683,15 @@ def validate_args(args, defaults={}):
 
         assert not args.use_torch_fsdp2, "Emerging optimizer does not support Torch-FSDP2 for now."
         assert not args.use_megatron_fsdp, "Emerging optimizer does not support Megatron-FSDP for now."
-        assert args.ckpt_format in ["torch", "torch_dist"], "Emerging optimizer supports torch and torch_dist checkpoint format."
-
+        if args.optimizer == 'iso':
+            assert args.ckpt_format == "torch", (
+                "ISO optimizer state uses factor tensors with shapes that differ from the model "
+                "parameters and currently supports only torch checkpoint format."
+            )
+        else:
+            assert args.ckpt_format in ["torch", "torch_dist"], (
+                "Emerging optimizer supports torch and torch_dist checkpoint format."
+            )
 
     # Make sure all functionality that requires Gloo process groups is disabled.
     if not args.use_gloo_process_groups:
@@ -2546,6 +2553,11 @@ def _add_regularization_args(parser):
                        choices=['adam', 'lion'],
                        help='Optimizer for scalar parameters (embeddings, biases, norms) '
                        'when using muon. Defaults to adam.')
+    group.add_argument('--iso-momentum', type=float, default=0.9,
+                       help='Momentum factor for the ISO optimizer')
+    group.add_argument('--iso-retraction', type=str, default='qr',
+                       choices=['qr', 'polar', 'cayley'],
+                       help='Retraction method for the ISO optimizer')
     group.add_argument('--lion-beta1', type=float, default=0.95,
                        help='First beta coefficient for Lion optimizer '
                        '(used in sign update). Default: 0.95.')
@@ -2774,7 +2786,16 @@ def _add_training_args(parser):
                        help='use FlashAttention implementation of attention. '
                        'https://arxiv.org/abs/2205.14135')
     group.add_argument('--optimizer', type=str, default='adam',
-                       choices=['adam', 'sgd', 'muon', 'dist_muon', 'lion', 'soap', 'adaptive_muon'],
+                       choices=[
+                           'adam',
+                           'sgd',
+                           'muon',
+                           'dist_muon',
+                           'lion',
+                           'soap',
+                           'adaptive_muon',
+                           'iso',
+                       ],
                        help='Optimizer function. '
                             'Note: dist_muon is deprecated; use --optimizer muon '
                             'with --use-distributed-optimizer instead.')

@@ -207,7 +207,7 @@ class OptimizerConfig:
     """dtype of exp_avg_sq when enabling precision-aware-optimizer"""
 
     optimizer: str = 'adam'
-    """Optimizer name (e.g., 'adam', 'sgd', 'muon'). Can be overridden per-parameter group
+    """Optimizer name (e.g., 'adam', 'sgd', 'muon', 'iso'). Can be overridden per-parameter group
     via config_overrides to use different optimizers for different parameters."""
 
     ###############
@@ -288,6 +288,12 @@ class OptimizerConfig:
     muon_scalar_optimizer: str = 'adam'
     """Optimizer for nonlinear parameters (embeddings, biases, norms) when using muon.
     One of 'adam' or 'lion'. Defaults to 'adam'."""
+
+    iso_momentum: float = 0.9
+    """Momentum factor for the ISO optimizer."""
+
+    iso_retraction: str = "qr"
+    """Retraction method for the ISO optimizer. One of "qr", "polar", or "cayley"."""
 
     # Lion.
     lion_beta1: float = 0.95
