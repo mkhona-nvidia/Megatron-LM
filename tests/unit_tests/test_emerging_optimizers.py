@@ -79,7 +79,6 @@ def test_iso_optimizer_registry_integration():
     config = OptimizerConfig(
         optimizer="iso",
         lr=0.01,
-        weight_decay=0.0,
         iso_momentum=0.8,
         iso_retraction="polar",
     )
